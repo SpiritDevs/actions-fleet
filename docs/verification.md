@@ -1,10 +1,17 @@
 # Deployment verification
 
 Verified on 2026-09-19. The dashboard is deployed at
-https://actions.spiritdevs.com and the relay at
-https://api.actions.spiritdevs.com. The first enrolled host is an Apple Silicon
-Mac Studio. Its agent runs as a user LaunchAgent, with the separate menu bar
-app installed in `~/Applications` and configured to open at login.
+[actions.spiritdevs.com](https://actions.spiritdevs.com) and the relay at
+[api.actions.spiritdevs.com](https://api.actions.spiritdevs.com). Two physical
+Apple Silicon Mac Studios are enrolled. Each has a user LaunchAgent and a
+separate menu bar app in `~/Applications`, configured to open at login. Installed
+agent/runner files live outside the source checkout; host credentials remain
+in a 0600 configuration file within a 0700 state directory.
+
+| Host | Mode exercised | Verified toolchains/capabilities |
+| --- | --- | --- |
+| Mac Studio | Dedicated | M2 Max, 32 GiB memory, native ARM64 runner and Apple Command Line Tools |
+| Mac Studio (Xcode) | Shared | M2 Max, 32 GiB memory, Node 24.19.0, Rust 1.97.1, CMake 4.4.3, full Xcode 26.3 with macOS/iOS/visionOS 26.2 SDKs; `xcode` label |
 
 ## Real GitHub jobs
 
@@ -21,26 +28,59 @@ app installed in `~/Applications` and configured to open at login.
   a deliberately denied administrator hook prevented every contributed step,
   including `if: always()` output. This validates the patched execution gate;
   failure of an ordinary upstream hook alone is insufficient.
+- [Pathway Release Smoke](https://github.com/SpiritDevs/pathway/actions/runs/35402122705/job/105784079587):
+  passed every step on the second Mac in Shared mode, including checkout,
+  Vite+ dependency/cache setup, release-only workflow checks, and post steps.
+  GitHub identified runner `fleet-d0d53232-abb8780f-785`; the native worker's
+  process priority was verified as `nice 10`. Relay logs arrived during execution.
+  The first Mac simultaneously ran Test Server 1 from the same workflow,
+  demonstrating compatible job assignment across two physical machines.
 
-An authenticated browser verified the deployed job history, Mac status,
-WebSocket connection, and completed console output without page errors. Normal
-GitHub browser login was also exercised.
+An authenticated browser verified the deployed job history, both Mac cards,
+available-memory display, WebSocket connection, and completed console output
+without page errors. Both installed agents now report the optional available
+memory field. Normal GitHub browser login was also exercised.
 
 ## Automated checks
 
-The fleet's 80 tests, workspace typechecks, and builds passed. The pinned
+The fleet's 86 tests passed: 27 agent, 46 relay, 6 dashboard, and 7 script tests.
+Workspace typechecks and builds passed. The pinned
 runner's 25 focused C# tests passed, including actual Bash/sh invocation with
 spaces and quote characters in paths. Native Swift menu model checks and its
 build passed. A real Unix socket test covers the short, private job temporary
 directory required by macOS’s socket-path limit. Service plist validation uses macOS `plutil`.
 
+Shared admission retains its default CPU ceiling of 50% and minimum available
+memory of 4 GiB. The second Mac initially waited because raw free memory was
+about 1.2 GiB; the separate `memoryAvailableBytes` estimate reported about
+13.7 GiB and admitted the successful job without changing those thresholds.
+Tests cover macOS and Linux parsing, page-size/unit handling, invalid readings,
+collection failures, and fallback to free memory when the optional field is
+absent or unavailable. See the [host guide](../apps/agent/README.md) for the
+calculation and its limits; it estimates headroom rather than reserving memory.
+
+## Retention and operating bounds
+
+The deployed relay retains console records for up to 30 days, bounded by
+256 MiB for the fleet and 32 MiB per job. Accepted batches are acknowledged;
+oldest records are evicted when byte limits are reached, and replay reports
+truncation. Completed job/control metadata has a 90-day retention window.
+These byte budgets cover log payloads; database indexes and other storage
+overhead are additional provider usage. There is no R2 archive.
+
+Each host has a default 256 MiB spool budget, including a raw capture cap of
+64 MiB and a replay queue cap of 32 MiB per lease, with compaction headroom.
+Each physical host admits one active job. Hosting, storage, network usage,
+GitHub artifacts/caches, and electricity remain separate costs.
+
 ## Coverage limits
 
-Only one physical Mac has been enrolled and exercised. Native Linux support and
-multi-host admission have automated coverage; real Linux and multiple-machine
-operation still require those machines to be enrolled. Full Xcode is absent on
-this Mac, so it does not advertise the `xcode` capability. The menu app is locally
-ad-hoc signed; there is no notarized downloadable distribution yet.
+Two physical ARM64 Macs have been exercised concurrently. Native Linux support,
+including its memory parser and service definition, is implemented, but no real
+Linux host has been enrolled or validated. Intel Mac execution is also unverified.
+Full Xcode and SDK discovery passed on the second Mac; that alone does not prove
+the native iOS/visionOS workflow lanes. The menu app is locally ad-hoc signed;
+there is no notarized downloadable distribution yet.
 
 Pilot checks do not establish that a Pathway signed release or every existing
 Pathway test succeeds. Track those separately in the Pathway migration runbook.

@@ -1,6 +1,10 @@
 # CI fleet implementation plan
 
-Status: design approved; implementation and deployment validation are in progress. The public repository is SpiritDevs/actions-fleet. A native Mac runner has completed the GitHub pilot; production Pathway activation follows integrated fleet validation.
+Status: implemented and deployed at SpiritDevs/actions-fleet. Two physical Macs
+have executed GitHub jobs concurrently. Pathway's workflow migration is active,
+CI validation continues, and signed desktop release validation remains pending.
+The npm CLI bootstrap at `0.0.42` is published. See the
+[verification record](verification.md) for completed proofs and coverage limits.
 
 ## Outcome
 
@@ -69,6 +73,13 @@ The goal is to remove routine paid build-runner compute, not to claim zero opera
 
 If capacity is unavailable, jobs wait within GitHub's queue limits. Recovery defaults to pausing admission and repairing the fleet; use hosted execution only through the agreed explicit manual switch. Keep migration changes reversible and do not make rollback automatically restore Blacksmith billing or publish another release.
 
-Live-log extraction, cross-account admission, outside-contribution gating, toolchain compatibility, unattended restart, and actual multi-host behavior must be demonstrated during implementation. Only the current M2 Max has been inspected. Provider/account setup and credentials will be handled through their normal configuration flows; no secret values belong in these documents.
+The [verification record](./verification.md) tracks completed implementation
+proofs separately from this plan. Two physical M2 Max Macs have been enrolled
+and exercised concurrently, including Shared admission and a successful Pathway
+Release Smoke job on the Xcode-equipped host. Native Linux support remains
+unverified on a physical Linux machine. Release/signing and project-wide checks
+need their own evidence; a fleet pilot does not establish their outcome.
+Provider/account credentials stay in their normal configuration flows; no
+secret values belong in these documents.
 
 The user confirmed the design and authorized implementation, deployment, and the public repository. A native Mac menu bar app supplements the web dashboard with connection state, current work, local pause/resume, and a quit action that leaves the host service running.

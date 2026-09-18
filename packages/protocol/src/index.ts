@@ -7,6 +7,7 @@ export const architectureSchema = z.enum(["arm64", "x64"]);
 export const hostMetricsSchema = z.object({
   cpuPercent: z.number().min(0).max(100), memoryUsedBytes: z.number().nonnegative(),
   memoryTotalBytes: z.number().positive(), diskFreeBytes: z.number().nonnegative(),
+  memoryAvailableBytes: z.number().nonnegative().optional(),
   loadAverage: z.number().nonnegative(), cpuCount: z.number().int().positive(),
 });
 export type HostMetrics = z.infer<typeof hostMetricsSchema>;

@@ -1,5 +1,11 @@
 # Deploy and enroll
 
+The current deployment uses [actions.spiritdevs.com](https://actions.spiritdevs.com)
+for the Vercel dashboard and [api.actions.spiritdevs.com](https://api.actions.spiritdevs.com)
+for the Cloudflare relay. The examples below use placeholders for another deployment.
+See the [verification record](verification.md) for the two-Mac validation and
+the remaining Linux coverage limit.
+
 Use Node 24 LTS. Install dependencies with `npm ci`, then run `npm run typecheck`,
 `npm test`, and `npm run build`. Tests are scoped to this repository's application,
 protocol, and script directories; ignored worktrees and runner checkouts are excluded.
@@ -64,10 +70,18 @@ your provider plan.
 
 ## Hosts
 
-Build the pinned runner on each target OS/architecture with
+Build the pinned runner for each target OS/architecture with
 `node scripts/build-runner.mjs`, then build the host agent. The first runner build
 downloads the upstream source and .NET toolchain. Each host needs its projects'
 normal build tools, signing tools, and available disk space.
+
+Hosts with the same OS/architecture can reuse a verified unregistered template;
+do not copy an active runner's credentials or workspace. Install the agent,
+Node LTS runtime, and template in a stable location outside a disposable source
+checkout, then generate service files using those installed paths. The two-Mac
+deployment reused the same patched ARM64 template and bundled Node 24 runtime.
+Advertise `xcode` only after full Xcode, first-launch setup, and required SDK
+discovery pass on that host.
 
 Sign in to the dashboard with the configured GitHub owner, sync repository
 connections, and enable a pilot repository. Create a one-use enrollment token and
@@ -75,6 +89,16 @@ follow [host setup](../apps/agent/README.md). Hosts start Paused. Set Dedicated 
 Shared only after checking installed toolchains and runner labels. One physical
 host supplies one active slot. Additional compatible machines increase capacity;
 GitHub assigns the jobs.
+
+Shared mode defaults to CPU usage at or below 50% and at least 4 GiB available
+memory. The optional available-memory metric includes reclaimable cache; missing
+or invalid readings fall back to free memory. Shared jobs run with lower process
+priority and supported tool concurrency limits, with no hard CPU/memory cap.
+Mac LaunchAgents use `Interactive` scheduling so launchd does not impose separate
+background throttling on every job. For a service update, pause admission, wait
+for an idle status, unload the tracked service, replace installed files, and
+bootstrap it again. Wait for the prior unload to complete before retrying a
+transient bootstrap failure; do not stop unrelated processes.
 
 On a Mac, build `sh apps/menubar/build.sh` and open the generated Actions Fleet
 app. It reads the host's nonsecret status and offers local pause/resume. The host

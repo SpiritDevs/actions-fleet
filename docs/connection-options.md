@@ -1,6 +1,10 @@
 # Fleet connections with a Vercel dashboard
 
-Research snapshot: 2026-09-19. The user selected Vercel for the dashboard and a Cloudflare Worker/Durable Object fleet relay. Other arrangements below are retained for their tradeoffs. No deployment has occurred.
+Research snapshot: 2026-09-19. The user selected Vercel for the dashboard and a
+Cloudflare Worker/Durable Object fleet relay; both are now deployed. See the
+[verification record](verification.md) for current endpoints and real-job proof.
+Other arrangements below are retained as research into their tradeoffs, not as
+the deployed topology or a current quote for provider pricing.
 
 The dashboard will run on Vercel. The user wants browser access from anywhere, live logs, and remote job/host controls, with understandable network allowances and charges. Each CI host should be able to initiate its own authenticated outbound connection; inbound ports on the user's home network are unnecessary for the options below.
 
@@ -64,4 +68,7 @@ This separates dashboard hosting from the long-lived connection service without 
 - Dedicated, Shared, and Paused are host capacity modes. Pausing admission lets existing jobs finish.
 - The host agent's connection and runner-registration credentials belong outside contributed job environments.
 
-Jobs will run natively on enrolled hosts. A minimal official-runner extension is permitted if needed for live-log collection, subject to a feasibility proof and no added paid-service/licensing requirement. No servers have been provisioned and no service has been deployed.
+Jobs run natively on enrolled hosts. The deployed pinned runner includes the
+post-masking console exporter; its Mac proof and remaining Linux validation are
+recorded in [deployment verification](verification.md). No VPS or per-host
+Cloudflare Tunnel was needed for this deployment.

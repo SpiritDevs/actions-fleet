@@ -1,6 +1,26 @@
 # Pathway migration and workflow restoration
 
-Read-only audit on 2026-09-19 against main `6590b42077188c0e5e2141fb4b0d584f2413737b`. The local checkout is older; edit current main or an isolated checkout based on it, not the stale workflow copies.
+## Implementation status on 2026-09-19
+
+The native workflow migration was implemented in
+[`1a53de8a3`](https://github.com/SpiritDevs/pathway/commit/1a53de8a36dea6bc84ca98c94e45e0b56cdf8efb),
+and repository Actions are enabled. Two physical Macs have executed jobs
+concurrently, including a successful Pathway Release Smoke job in Shared mode.
+See the [fleet verification record](verification.md) and Pathway's
+[current operations runbook](https://github.com/SpiritDevs/pathway/blob/main/docs/operations/actions-fleet-migration.md)
+for deployed behavior, release prerequisites, and separate project-check results.
+
+The owner approved `@spiritdevs/pathway@0.0.42` through npm 2FA; its public
+publication and isolated CLI installation were verified. The published CLI
+supports Apple Silicon Macs initially. Source package versions remain `0.0.41`,
+so the next stable publication must select a new version greater than `0.0.42`.
+Do not rerun the historical bootstrap using that already-published version.
+
+The remainder preserves the **read-only audit** performed on 2026-09-19 against
+main `6590b42077188c0e5e2141fb4b0d584f2413737b`. Its disabled-workflow,
+missing-package, and not-yet-implemented observations describe that earlier
+snapshot, not current deployment state. The developer's original checkout was
+older; implementation used an isolated checkout based on current main.
 
 ## Required outcome
 

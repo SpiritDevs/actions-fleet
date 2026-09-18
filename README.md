@@ -2,7 +2,15 @@
 
 Run GitHub Actions on your own Macs and Linux machines. Keep GitHub workflows, checks, artifacts, and releases, with a shared dashboard for live logs and remote controls.
 
-The dashboard, relay, native host service, and Mac menu bar app are implemented. The first Mac has passed real GitHub build, live-log, reconnect, cancellation, artifact, and denied-admission pilots. See the [verification record](docs/verification.md) for evidence and remaining platform coverage.
+The dashboard, relay, native host service, and Mac menu bar app are implemented.
+Two physical Macs have run GitHub jobs concurrently, including a successful
+Pathway Release Smoke job in Shared mode. Build, live-log, reconnect,
+cancellation, artifact, and denied-admission pilots have passed. Native Linux
+support is implemented but has not been validated on a physical Linux host.
+See the [verification record](docs/verification.md) for evidence and coverage limits.
+
+The deployed [dashboard](https://actions.spiritdevs.com) connects to the
+[Cloudflare relay](https://api.actions.spiritdevs.com).
 
 ## Components
 
@@ -13,6 +21,11 @@ The dashboard, relay, native host service, and Mac menu bar app are implemented.
 - `patches/runner`: maintained, opt-in console export after the official runner's secret masking.
 
 Dedicated hosts provide configured capacity; Shared hosts reserve room for other work; Paused hosts finish current work and accept no new jobs. GitHub distributes jobs among compatible available runners. Mac jobs require Mac hosts, and Linux/container jobs require compatible Linux hosts.
+
+Shared admission defaults to CPU usage at or below 50% and at least 4 GiB
+estimated available memory, then applies `nice -n 10` and supported build-tool
+concurrency limits. Available-memory collection falls back to free memory when
+unavailable; these controls do not reserve resources or impose hard caps.
 
 Use Node 24 LTS and npm:
 

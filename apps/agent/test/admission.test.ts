@@ -17,6 +17,18 @@ describe("native admission",()=>{
     expect(admissionReason({...ready,mode:"shared",metrics:busy})).toMatch(/CPU/);
     expect(admissionReason({...ready,mode:"shared",metrics:{...busy,cpuPercent:10}})).toMatch(/memory/);
   });
+  it("uses available memory for Shared admission while retaining old-report and invalid-report fallbacks",()=>{
+    const shared = {...ready,mode:"shared" as const,metrics:{...metrics,cpuPercent:10,memoryUsedBytes:31e9}};
+    expect(admissionReason(shared)).toMatch(/memory/);
+    expect(admissionReason({...shared,metrics:{...shared.metrics,memoryAvailableBytes:8e9}})).toBeNull();
+    expect(admissionReason({...shared,metrics:{...shared.metrics,memoryAvailableBytes:4e9}})).toBeNull();
+    expect(admissionReason({...shared,metrics:{...shared.metrics,memoryAvailableBytes:4e9-1}})).toMatch(/memory/);
+    expect(admissionReason({...shared,metrics:{...metrics,memoryAvailableBytes:0}})).toMatch(/memory/);
+    expect(admissionReason({...shared,metrics:{...shared.metrics,memoryAvailableBytes:8e9,cpuPercent:51}})).toMatch(/CPU/);
+    for (const memoryAvailableBytes of [-1,Infinity,NaN,shared.metrics.memoryTotalBytes+1]) {
+      expect(admissionReason({...shared,metrics:{...shared.metrics,memoryAvailableBytes}})).toMatch(/memory/);
+    }
+  });
   it("does not pass supervisor credentials or Node/shell injection variables to jobs",()=>{
     const environment = runnerEnvironment({PATH:"/usr/bin",HOME:"/home/test",FLEET_TOKEN:"secret",NPM_TOKEN:"secret",GITHUB_TOKEN:"secret",NODE_OPTIONS:"--require bad",BASH_ENV:"bad",DYLD_INSERT_LIBRARIES:"bad"},true,12);
     expect(environment).toEqual({PATH:"/usr/bin",HOME:"/home/test",CI:"true",CARGO_BUILD_JOBS:"6",CMAKE_BUILD_PARALLEL_LEVEL:"6",MAKEFLAGS:"-j6",UV_THREADPOOL_SIZE:"6",OMP_NUM_THREADS:"6"});

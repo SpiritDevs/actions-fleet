@@ -1,10 +1,14 @@
 # Fleet feasibility gates
 
-These validation gates support the consolidated [implementation plan](./implementation-plan.md), which awaits final shared-understanding confirmation. The selected topology is recorded in [ADR 0004](./adr/0004-host-the-fleet-relay-on-cloudflare.md), and native execution in [ADR 0005](./adr/0005-run-jobs-natively-on-fleet-hosts.md).
+These validation gates support the approved [implementation plan](./implementation-plan.md).
+The [verification record](verification.md) distinguishes completed deployment
+proofs from outstanding platform and release validation. The selected topology
+is recorded in [ADR 0004](./adr/0004-host-the-fleet-relay-on-cloudflare.md), and
+native execution in [ADR 0005](./adr/0005-run-jobs-natively-on-fleet-hosts.md).
 
 ## First proof: complete live console output
 
-Live console logs inside the dashboard are required. The inspected official runner has no documented general-purpose console export hook; internal temporary log files do not establish prompt, lossless capture. The user accepts a minimal additive export after the runner's own masking if necessary, without an added paid-service/licensing requirement. The extension still needs proof and an update process.
+Live console logs inside the dashboard are required. The inspected official runner has no documented general-purpose console export hook; internal temporary log files do not establish prompt, lossless capture. The implemented additive exporter runs after upstream masking, with a pinned runner build and update process. Mac pilot evidence is recorded separately; Linux execution remains to be validated on a real host.
 
 Prove collection before building the full dashboard:
 
@@ -32,7 +36,9 @@ For each supported environment, prove:
 - An unapproved outside contribution cannot acquire execution capacity; approval cannot accidentally authorize later changed code.
 - Hosts expose accurate OS/architecture capabilities, and incompatible jobs remain queued with a clear explanation.
 
-Only the current M2 Max has been inspected. Actual remote Linux and other Mac capability checks will be needed during enrollment; support cannot be inferred merely from another machine being present.
+Two M2 Max Macs have been inspected, enrolled, and exercised concurrently;
+the second has full Xcode. Additional Macs and physical Linux hosts still need
+their own capability and execution checks during enrollment.
 
 ## Relay and dashboard proof
 

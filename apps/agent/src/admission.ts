@@ -15,7 +15,10 @@ export function admissionReason(state: AdmissionState): string | null {
   if (state.spoolAvailableBytes < 1024 * 1024) return "Waiting for log spool capacity";
   if (state.mode === "shared") {
     if (state.metrics.cpuPercent > state.sharedMaxCpuPercent) return "Shared mode is waiting for lower CPU usage";
-    if (state.metrics.memoryTotalBytes - state.metrics.memoryUsedBytes < state.sharedMinFreeMemoryBytes) return "Shared mode is waiting for free memory";
+    const available = state.metrics.memoryAvailableBytes;
+    const memoryHeadroom = available !== undefined && Number.isFinite(available) && available >= 0 && available <= state.metrics.memoryTotalBytes
+      ? available : Math.max(0,state.metrics.memoryTotalBytes-state.metrics.memoryUsedBytes);
+    if (memoryHeadroom < state.sharedMinFreeMemoryBytes) return "Shared mode is waiting for available memory";
   }
   return null;
 }

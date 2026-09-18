@@ -27,3 +27,11 @@ Host endpoints:
 - `POST /agent/admission` `{leaseId, runId, runAttempt, headSha}` -> `{allowed:false}` or `{allowed:true, job:{jobId, repository, runId, runAttempt, headSha}}`. GitHub can assign a different compatible job from the original capacity hint. Bind logs only after this authoritative response; its SHA describes verified execution, while approval retains the canonical revision. HTTP 503/409 may be retried briefly while GitHub exposes the assignment; an explicit denial is final. The patched runner enforces denial before evaluating any contributed `always()` or post steps.
 
 Errors: JSON `{error: string}` with appropriate HTTP status. No mock data or development bypass in production. The dashboard can show setup instructions when no App credentials are configured.
+
+Host metrics include CPU usage, total/used memory, free disk, load average, and
+CPU count. `memoryAvailableBytes` is an optional nonnegative byte estimate for
+new-work admission; it does not redefine `memoryUsedBytes`. Updated agents bound
+it to physical memory and fall back to free memory on collection failure. Shared
+admission accepts older reports without the field using total minus used memory.
+The dashboard shows available memory only when reported; it does not promise a
+hard resource reservation.

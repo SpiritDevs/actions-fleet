@@ -38,7 +38,7 @@ the current nonsecret status JSON. The Mac menu app consumes that same atomic
 the status is no longer a live health report. Quitting the menu app does not stop
 the host service.
 
-Shared mode waits for CPU usage at or below 50% and at least 4 GiB free memory,
+Shared mode waits for CPU usage at or below 50% and at least 4 GiB available memory,
 then starts the runner with `nice -n 10` and conservative build-tool concurrency
 environment variables. The private config can adjust these thresholds. Tools
 can override those variables; these are admission and priority controls, not
@@ -46,6 +46,16 @@ hard CPU or memory caps. Both modes wait below 1 GiB free disk space. Configured
 labels describe installed capabilities; enrollment advertises the appropriate
 `fleet-macos-arm64`, `fleet-macos-x64`, `fleet-linux-arm64`, or `fleet-linux-x64`
 label automatically. Add other capabilities using repeatable `--label` options.
+
+Admission uses the separate `memoryAvailableBytes` estimate; the displayed
+`memoryUsedBytes` remains total minus free memory. macOS adds the displayed
+free, inactive, and speculative page counts from `vm_stat` (whose free count
+[already excludes speculative pages](https://github.com/apple-oss-distributions/system_cmds/blob/main/vm_stat/vm_stat.c));
+it does not add overlapping purgeable or file-backed totals. Linux uses
+[`MemAvailable` from `/proc/meminfo`](https://docs.kernel.org/filesystems/proc.html#meminfo).
+These are estimates, not memory reservations. Collection is bounded to one
+second and falls back to free memory if unavailable, malformed, or out of range;
+older reports without the field also retain the free-memory admission check.
 
 Each runner gets a private short `TMPDIR` under `/tmp/actions-fleet-native-host`
 so nested Unix socket paths fit macOS's path limit. The host lock records those
