@@ -28,10 +28,11 @@ GitHub browser login was also exercised.
 
 ## Automated checks
 
-The fleet's 77 tests, workspace typechecks, and builds passed. The pinned
+The fleet's 80 tests, workspace typechecks, and builds passed. The pinned
 runner's 25 focused C# tests passed, including actual Bash/sh invocation with
 spaces and quote characters in paths. Native Swift menu model checks and its
-build passed. Service plist validation uses macOS `plutil`.
+build passed. A real Unix socket test covers the short, private job temporary
+directory required by macOS’s socket-path limit. Service plist validation uses macOS `plutil`.
 
 ## Coverage limits
 

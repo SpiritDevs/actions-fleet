@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { build } from "esbuild";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -57,7 +57,10 @@ describe("native lifecycle",()=>{
     expect(Object.values(environment)).not.toContain(configuration(state).token);
     expect(environment.FLEET_HOOK_CAPABILITY).toMatch(/^[a-f0-9]{64}$/);
     expect(environment.ACTIONS_RUNNER_HOOK_JOB_STARTED).toMatch(/^\/[A-Za-z0-9_./-]+$/);
+    expect(environment.TMPDIR).toMatch(/\/lock\/t-[a-f0-9]{16}$/);
+    expect(environment.TMPDIR).not.toContain("Application Support");
     await expect(readFile(environment.ACTIONS_RUNNER_HOOK_JOB_STARTED)).rejects.toMatchObject({code:"ENOENT"});
+    await expect(stat(environment.TMPDIR)).rejects.toMatchObject({code:"ENOENT"});
     expect(await restoreSpools(join(state,"spool"))).toHaveLength(0);
     expect(await readFile(join(template,"run.sh"),"utf8")).toContain("GITHUB_RUN_ID");
     const status = JSON.parse(await readFile(join(state,"status.json"),"utf8"));

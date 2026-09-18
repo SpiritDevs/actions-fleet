@@ -69,7 +69,6 @@ export async function prepareRunner(configuration: AgentConfiguration, lease: Le
     if (excluded.has(entry.name)) continue;
     await cp(join(configuration.runnerDirectory,entry.name),join(destination,entry.name),{recursive:true,errorOnExist:true,force:false,dereference:false});
   }
-  await privateDirectory(join(destination,"fleet-temp"));
   return destination;
 }
 
@@ -91,9 +90,10 @@ export async function startRunner(configuration: AgentConfiguration, lease: Leas
   const capability = randomBytes(32).toString("hex");
   const quote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
   const hookPath = await lock.createHook(`#!/bin/sh\nexec ${quote(process.execPath)} ${quote(entrypoint)} internal-admission\n`);
+  const temporaryDirectory = await lock.createTemporaryDirectory();
   const environment = runnerEnvironment(process.env,mode === "shared");
   Object.assign(environment,{
-    TMPDIR:join(spool.jobDirectory,"fleet-temp"),
+    TMPDIR:temporaryDirectory,
     ACTIONS_RUNNER_HOOK_JOB_STARTED:hookPath,
     FLEET_REQUIRE_ADMISSION:"1",
     FLEET_HOOK_URL:`${lock.url}/admission`,FLEET_HOOK_CAPABILITY:capability,

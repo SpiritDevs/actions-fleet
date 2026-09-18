@@ -47,6 +47,11 @@ labels describe installed capabilities; enrollment advertises the appropriate
 `fleet-macos-arm64`, `fleet-macos-x64`, `fleet-linux-arm64`, or `fleet-linux-x64`
 label automatically. Add other capabilities using repeatable `--label` options.
 
+Each runner gets a private short `TMPDIR` under `/tmp/actions-fleet-native-host`
+so nested Unix socket paths fit macOS's path limit. The host lock records those
+directories and removes only its recorded resources after the runner exits;
+recovery preserves them while a previous runner is still alive.
+
 ## Service installation
 
 `npm run agent -- service-files` generates a user-scoped service definition in

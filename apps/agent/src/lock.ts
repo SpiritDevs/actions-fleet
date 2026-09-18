@@ -1,14 +1,14 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { lstat, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, rm, writeFile } from "node:fs/promises";
 import { isMissing, privateDirectory, readJson, writeJson } from "./files.js";
 
 // Fixed across state directories and OS users. The kernel listener serializes
 // acquisition; the private record also blocks a surviving runner after a crash.
 export const HOST_PORT = 47381;
 const HOST_LOCK_DIRECTORY = "/tmp/actions-fleet-native-host";
-interface LockRecord {nonce: string; pid: number; activePid?: number; stateDirectory: string; hookFiles?: string[]}
+interface LockRecord {nonce: string; pid: number; activePid?: number; stateDirectory: string; hookFiles?: string[]; temporaryDirectories?: string[]}
 export function processAlive(pid: number): boolean {
   if (!Number.isInteger(pid) || pid < 2) return false;
   try { process.kill(pid,0); return true; } catch(error) { return (error as NodeJS.ErrnoException).code === "EPERM"; }
@@ -39,7 +39,7 @@ export class HostLock {
       let previous: LockRecord | undefined;
       try { previous = await readJson<LockRecord>(join(this.directory,"owner.json")); } catch(error) {if (!isMissing(error)) throw error;}
       if (previous?.activePid && processAlive(previous.activePid)) throw new Error("A runner from the previous agent is still active; wait for it to finish before restarting");
-      if (previous) await this.removeRecordedHooks(previous);
+      if (previous) await this.removeRecordedResources(previous);
       await writeJson(join(this.directory,"owner.json"),this.record);
       this.owned = true;
     } catch(error) { await this.closeServer(); throw error; }
@@ -60,7 +60,22 @@ export class HostLock {
     }
     return path;
   }
-  private async removeRecordedHooks(record: LockRecord): Promise<void> {
+  async createTemporaryDirectory(): Promise<string> {
+    if (!this.owned) throw new Error("Host lock is not held");
+    await privateDirectory(this.directory);
+    // Keep TMPDIR short: Darwin Unix sockets allow only 104 bytes including the
+    // terminator. The default state directory plus a lease hash already exceeds it.
+    const filename = `t-${randomBytes(8).toString("hex")}`, path = join(this.directory,filename);
+    await mkdir(path,{mode:0o700});
+    this.record.temporaryDirectories = [...(this.record.temporaryDirectories ?? []),filename];
+    try {await writeJson(join(this.directory,"owner.json"),this.record);}
+    catch(error) {
+      this.record.temporaryDirectories = this.record.temporaryDirectories.filter(name=>name !== filename);
+      await rm(path,{recursive:true,force:true});throw error;
+    }
+    return path;
+  }
+  private async removeRecordedResources(record: LockRecord): Promise<void> {
     for (const filename of record.hookFiles ?? []) {
       if (!/^hook-[0-9a-f-]{36}\.sh$/.test(filename)) throw new Error("Refusing cleanup of an invalid recorded hook filename");
       const path = join(this.directory,filename);
@@ -70,6 +85,15 @@ export class HostLock {
         await rm(path,{force:true});
       } catch(error) {if (!isMissing(error)) throw error;}
     }
+    for (const filename of record.temporaryDirectories ?? []) {
+      if (!/^t-[0-9a-f]{16}$/.test(filename)) throw new Error("Refusing cleanup of an invalid recorded temporary directory");
+      const path = join(this.directory,filename);
+      try {
+        const info = await lstat(path);
+        if (!info.isDirectory() || info.isSymbolicLink() || (process.getuid && info.uid !== process.getuid())) throw new Error("Refusing cleanup of an unowned or linked temporary directory");
+        await rm(path,{recursive:true,force:true});
+      } catch(error) {if (!isMissing(error)) throw error;}
+    }
   }
   async trackChild(pid: number): Promise<void> {
     if (!this.owned) throw new Error("Host lock is not held");
@@ -77,8 +101,9 @@ export class HostLock {
     await writeJson(join(this.directory,"owner.json"),this.record);
   }
   async clearChild(): Promise<void> {
-    if (this.owned) await this.removeRecordedHooks(this.record);
+    if (this.owned) await this.removeRecordedResources(this.record);
     delete this.record.hookFiles;
+    delete this.record.temporaryDirectories;
     delete this.record.activePid;
     if (this.owned) await writeJson(join(this.directory,"owner.json"),this.record);
   }
@@ -92,7 +117,7 @@ export class HostLock {
     if (this.owned) {
       const saved = await readJson<LockRecord>(join(this.directory,"owner.json"));
       if (saved.nonce === this.record.nonce && !this.record.activePid) {
-        await this.removeRecordedHooks(this.record);
+        await this.removeRecordedResources(this.record);
         await rm(join(this.directory,"owner.json"),{force:true});
       }
       this.owned = false;
