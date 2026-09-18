@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "actions-fleet-relay",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "durable_objects": { "bindings": [{ "name": "FLEET", "class_name": "FleetDO" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["FleetDO"] }],
+  "vars": {
+    "OWNER_GITHUB_ID": "2592956",
+    "DASHBOARD_ORIGIN": "https://actions.spiritdevs.com",
+    "RELAY_PUBLIC_URL": "https://api.actions.spiritdevs.com",
+    "GITHUB_APP_SLUG": "",
+    "GITHUB_APP_ID": "",
+    "GITHUB_CLIENT_ID": "",
+    "MAX_LOG_BYTES": "268435456",
+    "MAX_JOB_LOG_BYTES": "33554432"
+  },
+  "observability": { "enabled": true }
+}

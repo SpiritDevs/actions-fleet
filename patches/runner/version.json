@@ -1,0 +1,8 @@
+{
+  "tag": "v2.337.0",
+  "commit": "397b032cbf865e9c3ddfab89d533ec19325e1273",
+  "source": "https://github.com/actions/runner.git",
+  "exportProtocol": 1,
+  "admissionProtocol": 1,
+  "shellPathProtocol": 1
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build --workspace @actions-fleet/dashboard",
+  "outputDirectory": "apps/dashboard/dist",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://api.actions.spiritdevs.com/api/:path*" },
+    { "source": "/auth/:path*", "destination": "https://api.actions.spiritdevs.com/auth/:path*" },
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ]
+}

@@ -1,0 +1,3 @@
+# Require approval for outside contributions
+
+Connecting a repository authorizes its participation in the fleet, but outside contributions still require a maintainer's explicit approval before execution. This allows the service to support public repositories while keeping approval of contributed code separate from the account installation flow. The execution design must enforce that boundary and define how approval applies when contribution code changes; jobs run natively as recorded in [ADR 0005](./0005-run-jobs-natively-on-fleet-hosts.md), so approval admits that code to the host's execution context.

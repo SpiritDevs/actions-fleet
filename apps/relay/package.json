@@ -1,0 +1,17 @@
+{
+  "name": "@actions-fleet/relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": { "@actions-fleet/protocol": "0.1.0", "zod": "4.6.5" },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260918.1",
+    "miniflare": "5.20260918.0-alpha",
+    "wrangler": "4.135.0"
+  }
+}

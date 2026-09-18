@@ -1,0 +1,11 @@
+# Use a dedicated development GitHub App. Never commit a populated .dev.vars.
+GITHUB_APP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+GITHUB_CLIENT_SECRET=""
+GITHUB_WEBHOOK_SECRET=""
+# Override vars locally with the actual same-origin dashboard and public relay.
+DASHBOARD_ORIGIN="http://localhost:5173"
+RELAY_PUBLIC_URL="http://localhost:8787"
+GITHUB_APP_ID=""
+GITHUB_APP_SLUG=""
+GITHUB_CLIENT_ID=""
+OWNER_GITHUB_ID="2592956"

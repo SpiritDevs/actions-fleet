@@ -1,0 +1,32 @@
+{
+  "name": "actions-fleet",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "dev:dashboard": "npm run dev --workspace @actions-fleet/dashboard",
+    "dev:relay": "npm run dev --workspace @actions-fleet/relay",
+    "agent": "npm run start --workspace @actions-fleet/agent"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.1",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.1": true,
+    "workerd@1.20260918.1": true,
+    "fsevents@2.3.3": true
+  }
+}
