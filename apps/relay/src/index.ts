@@ -381,6 +381,7 @@ export class FleetDO extends DurableObject<Env> {
       // currentJobId is derived from relay leases, never trusted as job ownership.
       const active = this.first<LeaseRow>("SELECT * FROM leases WHERE host_id=? AND status IN ('preparing','ready','admitted','recovering')", host.id);
       host.metrics = input.metrics; host.labels = input.labels; host.version = input.version;
+      host.admissionReason = input.admissionReason ?? null;
       host.lastSeenAt = nowIso(); host.currentJobId = active?.job_id ?? null; host.status = active ? "busy" : "online";
       this.writeHost(host); this.broadcast({ type: "refresh" }); return json({ mode: host.mode });
     }

@@ -9,7 +9,8 @@ export interface AdmissionState {
 export function admissionReason(state: AdmissionState): string | null {
   if (state.draining) return "Service is draining";
   if (!state.relayHealthy) return "Relay connection is unavailable";
-  if (state.locallyPaused || state.mode === "paused") return "Host is paused";
+  if (state.locallyPaused) return "Paused on this machine";
+  if (state.mode === "paused") return "Host is paused";
   if (state.active) return "A job already owns this host";
   if (state.metrics.diskFreeBytes < 1024 * 1024 * 1024) return "Less than 1 GiB of free disk space";
   if (state.spoolAvailableBytes < 1024 * 1024) return "Waiting for log spool capacity";

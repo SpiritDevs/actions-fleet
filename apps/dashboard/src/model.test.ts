@@ -1,9 +1,26 @@
 import { describe, expect, it } from "vitest";
 import type { Job, LogLine } from "@actions-fleet/protocol";
-import { durationSeconds, formatDuration, matchesJob, mergeLogLines, percentile, stripAnsi } from "./model";
+import { durationSeconds, formatDuration, hostAdmissionMessage, matchesJob, mergeLogLines, percentile, stripAnsi } from "./model";
 
 const line = (sequence: number, text = `line ${sequence}`): LogLine => ({ sequence, line: text, timestamp: "2026-09-19T00:00:00.000Z", runId: 1, runAttempt: 1, jobId: "1", stepId: "build" });
 const job: Job = { id: "1", runId: 1, runAttempt: 1, repository: "SpiritDevs/pathway", installationId: 1, workflowName: "Release", name: "Build macOS", branch: "main", headSha: "abc123def", actor: "corey", status: "completed", conclusion: "success", labels: [], hostId: null, runnerName: null, createdAt: "2026-09-19T00:00:00.000Z", startedAt: "2026-09-19T00:01:00.000Z", completedAt: "2026-09-19T00:03:30.000Z", htmlUrl: "https://github.com/SpiritDevs/pathway/actions/runs/1", steps: [] };
+
+describe("host admission visibility", () => {
+  it("shows local pauses and shared resource waits while keeping older reports compatible", () => {
+    const host = {mode:"shared" as const,status:"online" as const};
+    expect(hostAdmissionMessage(host)).toBe("Ready for compatible jobs");
+    expect(hostAdmissionMessage({...host,admissionReason:null})).toBe("Ready for compatible jobs");
+    for (const admissionReason of ["Paused on this machine","Shared mode is waiting for lower CPU usage","Shared mode is waiting for available memory"]) {
+      expect(hostAdmissionMessage({...host,admissionReason})).toBe(admissionReason);
+    }
+  });
+  it("gives remotely paused and offline states precedence over old admission telemetry", () => {
+    const host = {mode:"shared" as const,status:"online" as const,admissionReason:"Paused on this machine"};
+    expect(hostAdmissionMessage({...host,status:"offline"})).toBe("Waiting to reconnect");
+    expect(hostAdmissionMessage({...host,mode:"paused"})).toBe("Admission paused");
+    expect(hostAdmissionMessage({...host,mode:"paused",status:"offline"})).toBe("Admission paused");
+  });
+});
 
 describe("console replay", () => {
   it("merges HTTP replay with live output in sequence order without duplicates", () => {

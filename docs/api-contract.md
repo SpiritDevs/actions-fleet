@@ -35,3 +35,9 @@ it to physical memory and fall back to free memory on collection failure. Shared
 admission accepts older reports without the field using total minus used memory.
 The dashboard shows available memory only when reported; it does not promise a
 hard resource reservation.
+
+Heartbeats and `Host` records optionally include `admissionReason` (string or
+null, at most 160 characters). Agents send fixed admission messages only; local
+errors and credentials are never included. Null or an omitted field clears the
+previous message. This telemetry does not change the selected mode or let the
+dashboard resume a machine paused locally.

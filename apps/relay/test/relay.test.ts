@@ -129,6 +129,17 @@ describe("durable relay endpoints with GitHub boundary simulated", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Set-Cookie")).toContain("Max-Age=3600");
   });
+  it("persists admission telemetry and clears it for ready or older agents without changing host mode", async () => {
+    const heartbeat = {version:"0.1.0",currentJobId:null,labels:["self-hosted","fleet-macos-arm64"],metrics:{cpuPercent:10,memoryUsedBytes:8e9,memoryTotalBytes:32e9,diskFreeBytes:100e9,loadAverage:1,cpuCount:12}};
+    for (const report of [{admissionReason:"Paused on this machine"},{admissionReason:"Shared mode is waiting for lower CPU usage"},{admissionReason:null},{admissionReason:"Paused on this machine"},{}]) {
+      expect((await host("/agent/heartbeat", {...heartbeat,...report})).status).toBe(200);
+      const overview = await (await api("/api/overview")).json() as Overview;
+      const saved = overview.hosts.find(item => item.id === hostId)!;
+      expect(saved.admissionReason).toBe("admissionReason" in report ? report.admissionReason : null);
+      expect(saved.mode).toBe("paused");
+      expect(saved.currentJobId).toBeNull();
+    }
+  });
   it("enables only an App-selected repository after verifying external approval policy", async () => {
     expect((await api("/api/connections/sync", {})).status).toBe(200);
     expect((await api("/api/repositories/11", { enabled: true })).status).toBe(200);

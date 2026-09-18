@@ -76,12 +76,14 @@ describe("physical host ownership",()=>{
     const root = await mkdtemp("/tmp/fleet-lock-test-");directories.push(root);
     const filename = "t-0123456789abcdef", temporary = join(root,filename), unrelated = join(root,"unrelated");
     await mkdir(temporary,{mode:0o700});await mkdir(unrelated,{mode:0o700});
-    await writeFile(join(temporary,"owned"),"runner data");await writeFile(join(unrelated,"keep"),"keep");
+    await mkdir(join(temporary,"work","_temp"),{recursive:true,mode:0o700});
+    const owned = join(temporary,"work","_temp","set_output_test");
+    await writeFile(owned,"runner data");await writeFile(join(unrelated,"keep"),"keep");
     const previous = {nonce:"old",pid:9999999,activePid:process.pid,stateDirectory:"/old",temporaryDirectories:[filename]};
     await writeJson(join(root,"owner.json"),previous);
     const blocked = new HostLock("/new",root,0);locks.push(blocked);
     await expect(blocked.acquire((_req,res)=>res.end())).rejects.toThrow(/still active/);
-    expect(await readFile(join(temporary,"owned"),"utf8")).toBe("runner data");
+    expect(await readFile(owned,"utf8")).toBe("runner data");
     await writeJson(join(root,"owner.json"),{...previous,activePid:9999999});
     const recovered = new HostLock("/new",root,0);locks.push(recovered);
     await recovered.acquire((_req,res)=>res.end());

@@ -33,7 +33,7 @@ export async function enroll(relay: string, input: { token: string; name: string
 }
 
 export interface RelayClient {
-  heartbeat(metrics: HostMetrics, currentJobId: string | null): Promise<{mode: HostMode; revoked?: boolean}>;
+  heartbeat(metrics: HostMetrics, currentJobId: string | null, admissionReason?: string | null): Promise<{mode: HostMode; revoked?: boolean}>;
   claim(): Promise<Lease | null>;
   admission(leaseId: string, input: {runId: number; runAttempt: number; headSha: string}): Promise<AdmittedJob | null>;
   upload(leaseId: string, lines: LogLine[]): Promise<number>;
@@ -44,8 +44,8 @@ export type AdmittedJob = Pick<Lease,"jobId"|"repository"|"runId"|"runAttempt"|"
 export class ApiClient implements RelayClient {
   constructor(private readonly configuration: AgentConfiguration) {}
   private call(path: string, body: unknown): Promise<unknown> { return request(this.configuration.relayUrl, path, body, this.configuration.token); }
-  async heartbeat(metrics: HostMetrics, currentJobId: string | null): Promise<{mode: HostMode; revoked?: boolean}> {
-    return z.object({ mode: hostModeSchema, revoked: z.boolean().optional() }).parse(await this.call("/agent/heartbeat", { version: VERSION, metrics, currentJobId, labels: this.configuration.labels }));
+  async heartbeat(metrics: HostMetrics, currentJobId: string | null, admissionReason?: string | null): Promise<{mode: HostMode; revoked?: boolean}> {
+    return z.object({ mode: hostModeSchema, revoked: z.boolean().optional() }).parse(await this.call("/agent/heartbeat", { version: VERSION, metrics, currentJobId, labels: this.configuration.labels, admissionReason: admissionReason ?? null }));
   }
   async claim(): Promise<Lease | null> { return z.object({lease: leaseSchema.nullable()}).parse(await this.call("/agent/claim", {})).lease; }
   async admission(leaseId: string, input: {runId: number; runAttempt: number; headSha: string}): Promise<AdmittedJob | null> {

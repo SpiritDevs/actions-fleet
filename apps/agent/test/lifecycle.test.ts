@@ -25,6 +25,12 @@ async function fixture(): Promise<{root:string;entrypoint:string;template:string
   const script = `#!/bin/sh
 export GITHUB_RUN_ID=123 GITHUB_RUN_ATTEMPT=2 GITHUB_SHA=${"a".repeat(40)}
 /bin/bash $ACTIONS_RUNNER_HOOK_JOB_STARTED || exit 43
+work=$(${quote(process.execPath)} -e ${quote(`const files=JSON.parse(Buffer.from(process.argv[1],'base64'));const settings=JSON.parse(Buffer.from(files['.runner'],'base64'));process.stdout.write(require('node:path').resolve(settings.WorkFolder ?? '_work'));`)} "$2") || exit 44
+export GITHUB_WORKSPACE="$work/repository/repository" RUNNER_TEMP="$work/_temp"
+mkdir -p "$GITHUB_WORKSPACE" "$RUNNER_TEMP/_runner_file_commands" || exit 44
+export GITHUB_OUTPUT="$RUNNER_TEMP/_runner_file_commands/set_output_test"
+/bin/bash -c 'printf "rustup_version=fixture\\n" >> $GITHUB_OUTPUT' || exit 44
+cp "$GITHUB_OUTPUT" ${quote(join(root,"job-command-output.txt"))} || exit 44
 ${quote(process.execPath)} -e ${quote(`require('node:fs').writeFileSync(${JSON.stringify(join(root,"job-environment.json"))},JSON.stringify(process.env))`)}
 printf '%s' ${quote(raw("real helper, hook and tailer"))} >> "$FLEET_LOG_PATH"
 sleep 1
@@ -59,7 +65,13 @@ describe("native lifecycle",()=>{
     expect(environment.ACTIONS_RUNNER_HOOK_JOB_STARTED).toMatch(/^\/[A-Za-z0-9_./-]+$/);
     expect(environment.TMPDIR).toMatch(/\/lock\/t-[a-f0-9]{16}$/);
     expect(environment.TMPDIR).not.toContain("Application Support");
+    expect(environment.GITHUB_WORKSPACE).toBe(join(environment.TMPDIR,"work","repository","repository"));
+    expect(environment.RUNNER_TEMP).toBe(join(environment.TMPDIR,"work","_temp"));
+    expect(environment.GITHUB_OUTPUT).not.toMatch(/\s/);
+    expect(await readFile(join(root,"job-command-output.txt"),"utf8")).toBe("rustup_version=fixture\n");
+    expect(environment.FLEET_LOG_PATH.startsWith(join(state,"spool")+"/")).toBe(true);
     await expect(readFile(environment.ACTIONS_RUNNER_HOOK_JOB_STARTED)).rejects.toMatchObject({code:"ENOENT"});
+    await expect(readFile(environment.GITHUB_OUTPUT)).rejects.toMatchObject({code:"ENOENT"});
     await expect(stat(environment.TMPDIR)).rejects.toMatchObject({code:"ENOENT"});
     expect(await restoreSpools(join(state,"spool"))).toHaveLength(0);
     expect(await readFile(join(template,"run.sh"),"utf8")).toContain("GITHUB_RUN_ID");

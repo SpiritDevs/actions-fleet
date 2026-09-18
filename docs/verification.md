@@ -43,12 +43,16 @@ memory field. Normal GitHub browser login was also exercised.
 
 ## Automated checks
 
-The fleet's 86 tests passed: 27 agent, 46 relay, 6 dashboard, and 7 script tests.
+The fleet's 94 tests passed across 11 files.
 Workspace typechecks and builds passed. The pinned
 runner's 25 focused C# tests passed, including actual Bash/sh invocation with
 spaces and quote characters in paths. Native Swift menu model checks and its
 build passed. A real Unix socket test covers the short, private job temporary
-directory required by macOS’s socket-path limit. Service plist validation uses macOS `plutil`.
+directory required by macOS’s socket-path limit. The runner also places its
+checkout and GitHub command files in that private, space-free workspace; a real
+Bash redirect test covers actions that use an unquoted `$GITHUB_OUTPUT`. Durable
+runner state and log spools remain in the host state directory. Service plist
+validation uses macOS `plutil`.
 
 Shared admission retains its default CPU ceiling of 50% and minimum available
 memory of 4 GiB. The second Mac initially waited because raw free memory was

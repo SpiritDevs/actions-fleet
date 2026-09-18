@@ -24,6 +24,20 @@ export function validateJitConfiguration(encoded: string, expectedName: string):
   } catch {throw new Error("Relay JIT registration must name this runner, be ephemeral, and disable automatic updates");}
 }
 
+export function withRunnerWorkDirectory(encoded: string, expectedName: string, workDirectory: string): string {
+  validateJitConfiguration(encoded,expectedName);
+  if (!isAbsolute(workDirectory) || !/^\/[A-Za-z0-9_./-]+$/.test(workDirectory)) throw new Error("Runner work directory must be an absolute shell-safe path without spaces");
+  const files = JSON.parse(Buffer.from(encoded,"base64").toString("utf8")) as Record<string,string>;
+  const runnerKey = Object.keys(files).find(name=>name.toLowerCase() === ".runner")!;
+  const settings = JSON.parse(Buffer.from(files[runnerKey],"base64").toString("utf8")) as Record<string,unknown>;
+  // GitHub's .runner uses PascalCase, while older settings may use camelCase.
+  // Remove every spelling so JSON deserialization cannot select a stale path.
+  for (const name of Object.keys(settings)) if (name.toLowerCase() === "workfolder") delete settings[name];
+  settings.WorkFolder = workDirectory;
+  files[runnerKey] = Buffer.from(JSON.stringify(settings)).toString("base64");
+  return Buffer.from(JSON.stringify(files)).toString("base64");
+}
+
 export async function validateRunnerTemplate(directory: string): Promise<void> {
   if (!isAbsolute(directory)) throw new Error("Runner template directory must be absolute");
   const marker = await readJson<{exportProtocol?:number;admissionProtocol?:number;target?:string}>(join(directory,".fleet-runner.json"));
@@ -91,6 +105,9 @@ export async function startRunner(configuration: AgentConfiguration, lease: Leas
   const quote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
   const hookPath = await lock.createHook(`#!/bin/sh\nexec ${quote(process.execPath)} ${quote(entrypoint)} internal-admission\n`);
   const temporaryDirectory = await lock.createTemporaryDirectory();
+  const workDirectory = join(temporaryDirectory,"work");
+  const jitConfig = withRunnerWorkDirectory(lease.encodedJitConfig,lease.runnerName,workDirectory);
+  await mkdir(workDirectory,{mode:0o700});
   const environment = runnerEnvironment(process.env,mode === "shared");
   Object.assign(environment,{
     TMPDIR:temporaryDirectory,
@@ -110,7 +127,7 @@ export async function startRunner(configuration: AgentConfiguration, lease: Leas
   try {
     await lock.trackChild(child.pid);
     if (Date.parse(lease.expiresAt) <= Date.now()) throw new Error("Runner registration lease expired while preparing the host");
-    await new Promise<void>((resolve,reject) => child.send({type:"start",directory:spool.jobDirectory,jitConfig:lease.encodedJitConfig,resultPath:spool.resultPath,shared:mode === "shared"} satisfies StartMessage,error => error ? reject(error) : resolve()));
+    await new Promise<void>((resolve,reject) => child.send({type:"start",directory:spool.jobDirectory,jitConfig,resultPath:spool.resultPath,shared:mode === "shared"} satisfies StartMessage,error => error ? reject(error) : resolve()));
   } catch(error) { child.kill("SIGTERM"); throw error; }
   return active;
 }

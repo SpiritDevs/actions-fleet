@@ -129,7 +129,7 @@ export class HostService {
       this.lastHeartbeatAttempt = now;
       this.metrics = await this.collector.sample(this.config.stateDirectory);
       try {
-        const result = await this.api.heartbeat(this.metrics,this.active?.lease.jobId ?? null);
+        const result = await this.api.heartbeat(this.metrics,this.active?.lease.jobId ?? null,this.reason());
         this.mode = result.mode; this.revoked = !!result.revoked;
         this.healthy = !this.revoked; this.lastHeartbeat = Date.now();
         if (this.healthy) this.error = undefined;

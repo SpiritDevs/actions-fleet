@@ -15,7 +15,7 @@ export interface Host {
   id: string; name: string; platform: "darwin" | "linux"; architecture: "arm64" | "x64";
   mode: HostMode; status: "online" | "offline" | "busy"; labels: string[];
   lastSeenAt: string; enrolledAt: string; metrics: HostMetrics | null;
-  currentJobId: string | null; version: string;
+  currentJobId: string | null; version: string; admissionReason?: string | null;
 }
 export interface Repository {
   id: number; installationId: number; owner: string; name: string; fullName: string;
@@ -47,6 +47,7 @@ export interface Overview {
 export const heartbeatSchema = z.object({
   version: z.string().max(64), metrics: hostMetricsSchema,
   currentJobId: z.string().max(128).nullable(), labels: z.array(z.string().max(128)).max(30),
+  admissionReason: z.string().max(160).nullable().optional(),
 });
 export interface Lease {
   id: string; jobId: string; repository: string; runId: number; runAttempt: number;

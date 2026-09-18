@@ -1,7 +1,13 @@
-import type { Job, LogLine } from "@actions-fleet/protocol";
+import type { Host, Job, LogLine } from "@actions-fleet/protocol";
 
 export const LOG_WINDOW = 3000;
 export type JobFilter = "all" | "active" | "queued" | "waiting_approval" | "success" | "failed" | "cancelled";
+
+export function hostAdmissionMessage(host: Pick<Host, "mode" | "status" | "admissionReason">): string {
+  if (host.mode === "paused") return "Admission paused";
+  if (host.status === "offline") return "Waiting to reconnect";
+  return host.admissionReason || "Ready for compatible jobs";
+}
 
 export function jobResult(job: Job): string {
   return job.status === "completed" ? job.conclusion || "completed" : job.status;

@@ -58,9 +58,16 @@ second and falls back to free memory if unavailable, malformed, or out of range;
 older reports without the field also retain the free-memory admission check.
 
 Each runner gets a private short `TMPDIR` under `/tmp/actions-fleet-native-host`
-so nested Unix socket paths fit macOS's path limit. The host lock records those
-directories and removes only its recorded resources after the runner exits;
-recovery preserves them while a previous runner is still alive.
+so nested Unix socket paths fit macOS's path limit. After validating the JIT
+runner identity and security settings, the agent replaces only its `WorkFolder`
+with the absolute `work` subdirectory there. Checkouts, `RUNNER_TEMP`, and GitHub
+command files such as `GITHUB_OUTPUT`, `GITHUB_ENV`, and `GITHUB_PATH` therefore
+have paths without spaces, including when durable state is under macOS's
+`Application Support`. This is a real private directory, not a symlink. The
+runner installation and durable log spool remain in the state directory.
+The host lock records the temporary parent and removes only its recorded
+resources after the runner exits; recovery preserves them while a previous
+runner is still alive.
 
 ## Service installation
 

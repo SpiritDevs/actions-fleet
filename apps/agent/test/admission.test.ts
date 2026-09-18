@@ -7,6 +7,11 @@ import { admissionHook } from "../src/service.js";
 
 const ready: AdmissionState = {mode:"dedicated",locallyPaused:false,relayHealthy:true,active:false,draining:false,metrics,sharedMaxCpuPercent:50,sharedMinFreeMemoryBytes:4e9,spoolAvailableBytes:1e8};
 describe("native admission",()=>{
+  it("distinguishes a local pause from the remotely selected paused mode",()=>{
+    expect(admissionReason({...ready,locallyPaused:true})).toBe("Paused on this machine");
+    expect(admissionReason({...ready,mode:"paused"})).toBe("Host is paused");
+    expect(admissionReason({...ready,locallyPaused:false})).toBeNull();
+  });
   it("requires one free host slot, relay health, disk and replay capacity",()=>{
     expect(admissionReason(ready)).toBeNull();
     for (const patch of [{active:true},{draining:true},{relayHealthy:false},{locallyPaused:true},{mode:"paused" as const},{spoolAvailableBytes:0},{metrics:{...metrics,diskFreeBytes:10}}]) expect(admissionReason({...ready,...patch})).not.toBeNull();
