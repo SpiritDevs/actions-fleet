@@ -1,0 +1,54 @@
+name: Fleet pilot
+on:
+  workflow_dispatch:
+    inputs:
+      runner_label:
+        description: Enrolled fleet capability label
+        type: string
+        default: fleet-macos-arm64
+        required: true
+permissions:
+  contents: read
+jobs:
+  console:
+    name: Native console and masking
+    runs-on: [self-hosted, "${{ inputs.runner_label }}"]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Quiet output and masking
+        shell: bash
+        run: |
+          echo '::add-mask::fleet-pilot-synthetic-secret-314159'
+          echo 'Fleet pilot started'
+          echo 'masked value: fleet-pilot-synthetic-secret-314159'
+          sleep 2
+          echo 'quiet step resumed'
+          printf 'unicode: café 🛠️\n'
+      - name: Composite action
+        uses: ./.github/actions/pilot-composite
+      - name: JavaScript action
+        uses: actions/github-script@v8
+        with:
+          script: |
+            core.info('JavaScript action console output');
+            core.startGroup('grouped output');
+            core.info('group line');
+            core.endGroup();
+      - name: Volume and artifact
+        shell: bash
+        run: |
+          node -e 'for(let i=0;i<2000;i++) console.log(`pilot line ${i}`)'
+          mkdir -p pilot-output
+          printf 'Native fleet pilot completed\n' > pilot-output/result.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fleet-pilot-result
+          path: pilot-output/result.txt
+          retention-days: 1
+      - name: Final console marker
+        if: always()
+        run: echo 'fleet-pilot-final-tail'

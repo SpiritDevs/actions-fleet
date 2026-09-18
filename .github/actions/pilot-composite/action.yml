@@ -1,0 +1,7 @@
+name: Fleet composite pilot
+description: Exercise composite action console collection with synthetic output.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: echo 'Composite action console output'
