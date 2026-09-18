@@ -22,9 +22,10 @@ jobs:
       - name: Quiet output and masking
         shell: bash
         run: |
-          echo '::add-mask::fleet-pilot-synthetic-secret-314159'
+          test_secret="fleet-pilot-synthetic-$(printf '%s' secret)-314159"
+          echo "::add-mask::$test_secret"
           echo 'Fleet pilot started'
-          echo 'masked value: fleet-pilot-synthetic-secret-314159'
+          echo "masked value: $test_secret"
           sleep 2
           echo 'quiet step resumed'
           printf 'unicode: café 🛠️\n'
