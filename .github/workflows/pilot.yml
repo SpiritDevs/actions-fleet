@@ -7,6 +7,11 @@ on:
         type: string
         default: fleet-macos-arm64
         required: true
+      hold_seconds:
+        description: Keep a step running to test live output and cancellation
+        type: choice
+        default: "0"
+        options: ["0", "60", "180"]
 permissions:
   contents: read
 jobs:
@@ -29,6 +34,21 @@ jobs:
           sleep 2
           echo 'quiet step resumed'
           printf 'unicode: café 🛠️\n'
+      - name: Control window
+        if: inputs.hold_seconds != '0' && inputs.hold_seconds != ''
+        env:
+          FLEET_PILOT_HOLD: ${{ inputs.hold_seconds }}
+        run: |
+          node -e '
+            const limit = Number(process.env.FLEET_PILOT_HOLD);
+            if (![60, 180].includes(limit)) process.exit(1);
+            console.log("fleet-control-window-started");
+            let elapsed = 0;
+            const timer = setInterval(() => {
+              console.log(`fleet-control-tick ${++elapsed}`);
+              if (elapsed >= limit) clearInterval(timer);
+            }, 1000);
+          '
       - name: Composite action
         uses: ./.github/actions/pilot-composite
       - name: JavaScript action
