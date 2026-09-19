@@ -176,6 +176,8 @@ describe("durable relay endpoints with GitHub boundary simulated", () => {
   it("requires exact run revision AND GitHub's actual job-to-runner assignment", async () => {
     const input = { leaseId: lease.id, runId: lease.runId, runAttempt: lease.runAttempt, headSha: lease.headSha };
     expect(await (await host("/agent/admission", { ...input, headSha: "b".repeat(40) })).json()).toEqual({ allowed: false });
+    const deniedOverview = await (await api("/api/overview")).json() as Overview;
+    expect(deniedOverview.audit).toEqual(expect.arrayContaining([expect.objectContaining({ action: "admission.denied", target: lease.id, detail: `run=${lease.runId}; attempt=${lease.runAttempt}; GitHub did not verify the execution revision or current pull request revision` })]));
     expect((await host("/agent/admission", input)).status).toBe(503);
     wireJob.status = "in_progress"; wireJob.started_at = new Date().toISOString(); wireJob.runner_name = "another-runner";
     expect((await host("/agent/admission", input)).status).toBe(503);

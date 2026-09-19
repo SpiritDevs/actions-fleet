@@ -27,6 +27,14 @@ Host endpoints:
 - `POST /agent/logs` `{leaseId, lines: LogLine[]}` -> `{acknowledgedSequence: number}`. Sequences are scoped to one lease and strictly monotonic; retries deduplicate. Relay maps the runner GUID to the authoritative GitHub numeric job ID through the lease/run/runner name; do not trust an arbitrary supplied repository/job ID.
 - `POST /agent/admission` `{leaseId, runId, runAttempt, headSha}` -> `{allowed:false}` or `{allowed:true, job:{jobId, repository, runId, runAttempt, headSha}}`. GitHub can assign a different compatible job from the original capacity hint. Bind logs only after this authoritative response; its SHA describes verified execution, while approval retains the canonical revision. HTTP 503/409 may be retried briefly while GitHub exposes the assignment; an explicit denial is final. The patched runner enforces denial before evaluating any contributed `always()` or post steps.
 
+For `pull_request_target`, execution is verified against the repository's
+authoritative default-branch tip or its ancestry, as required by GitHub's
+[default-branch execution change](https://github.blog/changelog/2025-11-07-actions-pull_request_target-and-environment-branch-protections-changes/).
+The PR's head/ref/repository association and original-author approval remain
+separate requirements. A legacy PR base is not an alternate trusted execution
+source. Admission denials record a fixed diagnostic reason and run/attempt in
+the operator audit; they do not reveal credentials or bypass approval.
+
 Errors: JSON `{error: string}` with appropriate HTTP status. No mock data or development bypass in production. The dashboard can show setup instructions when no App credentials are configured.
 
 Host metrics include CPU usage, total/used memory, free disk, load average, and

@@ -477,11 +477,16 @@ export class FleetDO extends DurableObject<Env> {
   }
   private async admission(host: Host, input: { leaseId: string; runId: number; runAttempt: number; headSha: string }): Promise<{ allowed: boolean; job?: Pick<Lease, "jobId" | "repository" | "runId" | "runAttempt" | "headSha"> }> {
     const lease = this.ownedLease(input.leaseId, host.id);
+    const denied = (reason: string) => {
+      this.audit(`host:${host.id}`, "admission.denied", lease.id, `run=${input.runId}; attempt=${input.runAttempt}; ${reason}`);
+      return { allowed: false } as const;
+    };
     if (lease.status === "recovering") throw new HttpError(503, "Runner assignment is being reconciled; retry admission shortly");
-    if (!["ready", "admitted"].includes(lease.status)) return { allowed: false };
+    if (!["ready", "admitted"].includes(lease.status)) return denied("Runner lease is no longer ready or admitted");
     const repo = this.getRepo(lease.repository_id, true);
     const run = await this.github.run(repo.installationId, repo.fullName, input.runId);
-    if (run.repository.id !== repo.id || run.run_attempt !== input.runAttempt || !await this.github.executionRevision(repo.installationId, repo.fullName, run, input.headSha)) return { allowed: false };
+    if (run.repository.id !== repo.id || run.run_attempt !== input.runAttempt) return denied("GitHub repository or run attempt does not match");
+    if (!await this.github.executionRevision(repo.installationId, repo.fullName, run, input.headSha)) return denied("GitHub did not verify the execution revision or current pull request revision");
     let assigned: WireJob | undefined;
     for (let page = 1; page <= 10; page++) {
       const result = await this.github.installation<{ jobs: WireJob[] }>(repo.installationId, `/repos/${repo.fullName}/actions/runs/${input.runId}/attempts/${input.runAttempt}/jobs?per_page=100&page=${page}`);
@@ -490,12 +495,11 @@ export class FleetDO extends DurableObject<Env> {
     }
     if (!assigned) throw new HttpError(503, "GitHub has not exposed this runner's in-progress assignment yet; retry admission shortly");
     if (assigned.run_id !== input.runId || (assigned.run_attempt ?? run.run_attempt) !== input.runAttempt || assigned.head_sha !== run.head_sha || !compatible(assigned.labels, host.platform, host.architecture, host.labels)) {
-      this.audit(`host:${host.id}`, "admission.denied", lease.id, "GitHub did not confirm a compatible job assigned to this runner");
-      return { allowed: false };
+      return denied("GitHub did not confirm a compatible job assigned to this runner");
     }
     this.upsertJob(repo, assigned, run.actor.login, run);
     const { job } = this.getJob(String(assigned.id));
-    if (!await this.approved(repo, job, run)) return { allowed: false };
+    if (!await this.approved(repo, job, run)) return denied("The current run revision is not approved or its actor is not a verified repository writer");
     await this.verifyRepositoryPolicy(repo, false);
     const accepted = this.state.storage.transactionSync(() => {
       const current = this.ownedLease(lease.id, host.id);
@@ -513,7 +517,7 @@ export class FleetDO extends DurableObject<Env> {
       return true;
     });
     if (accepted) { this.audit(`host:${host.id}`, "admission.confirmed", lease.id, input.headSha); this.broadcast({ type: "refresh" }); }
-    return accepted ? { allowed: true, job: { jobId: job.id, repository: repo.fullName, runId: input.runId, runAttempt: input.runAttempt, headSha: input.headSha } } : { allowed: false };
+    return accepted ? { allowed: true, job: { jobId: job.id, repository: repo.fullName, runId: input.runId, runAttempt: input.runAttempt, headSha: input.headSha } } : denied("Host, repository, or lease admission changed during verification");
   }
 
   private async ingest(host: Host, leaseId: string, lines: LogLine[]): Promise<number> {

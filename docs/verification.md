@@ -44,6 +44,19 @@ in a 0600 configuration file within a 0700 state directory.
   also passed all six enabled jobs in
   [run 35409614904](https://github.com/SpiritDevs/pathway/actions/runs/35409614904).
 
+- PR-target admission was corrected after PR Size/Vouch jobs targeting legacy
+  branches were wrongly compared against the PR base instead of GitHub's
+  default-branch execution revision. Attempt 2 passed for PR #182's
+  [PR Size](https://github.com/SpiritDevs/pathway/actions/runs/35410831152/attempts/2)
+  and [PR Vouch](https://github.com/SpiritDevs/pathway/actions/runs/35410831145/attempts/2),
+  and PR #106's
+  [PR Size](https://github.com/SpiritDevs/pathway/actions/runs/35410841841/attempts/2)
+  and [PR Vouch](https://github.com/SpiritDevs/pathway/actions/runs/35410841799/attempts/2).
+  All setup, admission, and applicable label-update jobs passed on the fleet.
+  Tests continue to deny changed PR revisions, execution outside default-branch
+  ancestry, and unapproved outside contributors. Denials now record an operator
+  audit reason.
+
 - [Native dictation](https://github.com/SpiritDevs/pathway/actions/runs/35401583572)
   passed on the Command Line Tools Mac, including native Metal compilation,
   model/cancellation checks, and artifact upload.
@@ -97,7 +110,7 @@ successful jobs hid the control, and no browser runtime errors occurred.
 
 ## Automated checks
 
-The fleet's 117 tests passed across 14 files.
+The fleet's 136 tests passed across 14 files.
 Workspace typechecks and builds passed. The pinned
 runner's 25 focused C# tests passed, including actual Bash/sh invocation with
 spaces and quote characters in paths. Native Swift menu model checks and its

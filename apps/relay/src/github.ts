@@ -6,7 +6,7 @@ export interface GitHubRun {
   id: number; run_attempt: number; head_sha: string; head_branch: string;
   event: string; status: string; conclusion: string | null; name: string; html_url: string;
   actor: { login: string; id: number }; triggering_actor?: { login: string; id: number };
-  pull_requests: { number: number }[]; repository: { id: number; full_name: string; default_branch: string };
+  pull_requests: { number: number }[]; repository: { id: number; full_name: string; default_branch?: string };
 }
 export interface PullRequestRevision {
   number: number; user: { login: string };
@@ -76,14 +76,22 @@ export class GitHub {
       const commit = await this.installation<{ parents: { sha: string }[] }>(installation, `/repos/${repo}/git/commits/${executionSha}`);
       return commit.parents.length === 2 && commit.parents[1]?.sha === run.head_sha;
     }
-    // PR-target executes trusted base code, while run.head_sha identifies the PR
-    // tip in GitHub's REST response. A rerun can retain an older base revision.
-    for (const pr of requests) {
-      if (executionSha === pr.base.sha) continue;
-      const comparison = await this.installation<{ status: string }>(installation, `/repos/${repo}/compare/${executionSha}...${pr.base.sha}`);
-      if (!["ahead", "identical"].includes(comparison.status)) return false;
-    }
-    return true;
+    // Since 2025-12-08 PR-target executes the repository's default branch,
+    // including PRs targeting a different branch. REST run.head_sha still
+    // identifies the PR tip; the association above keeps approval pinned to it.
+    // Workflow-run repository payloads can omit default_branch, so resolve it
+    // from the repository API rather than using the PR base or a guessed name.
+    const repository = await this.installation<{ id: number; full_name: string; default_branch?: string }>(installation, `/repos/${repo}`);
+    if (repository.id !== run.repository.id || repository.full_name.toLowerCase() !== repo.toLowerCase() || !repository.default_branch?.trim()) return false;
+    const branch = await this.installation<{ commit?: { sha?: string } }>(installation, `/repos/${repo}/branches/${encodeURIComponent(repository.default_branch)}`);
+    const defaultSha = branch.commit?.sha;
+    if (!defaultSha || !/^[0-9a-f]{40}$/i.test(defaultSha) || !/^[0-9a-f]{40}$/i.test(executionSha)) return false;
+    if (executionSha === defaultSha) return true;
+    // Queued jobs and reruns may use an older default-branch commit. Only an
+    // ancestor is acceptable; an unmerged PR/base branch must not become an
+    // alternate source of trusted execution code.
+    const comparison = await this.installation<{ status: string }>(installation, `/repos/${repo}/compare/${executionSha}...${defaultSha}`);
+    return ["ahead", "identical"].includes(comparison.status);
   }
   async trusted(installation: number, repo: string, run: GitHubRun): Promise<boolean> {
     if (run.repository.full_name.toLowerCase() !== repo.toLowerCase()) return false;
