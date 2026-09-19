@@ -88,7 +88,9 @@ connections, and enable a pilot repository. Create a one-use enrollment token an
 follow [host setup](../apps/agent/README.md). Hosts start Paused. Set Dedicated or
 Shared only after checking installed toolchains and runner labels. One physical
 host supplies one active slot. Additional compatible machines increase capacity;
-GitHub assigns the jobs.
+GitHub assigns the jobs. Jobs can wait through an outage, but GitHub fails jobs
+that remain unassigned for 24 hours; restore capacity and deliberately retry
+expired runs. See [GitHub routing behavior](https://docs.github.com/en/actions/reference/runners/self-hosted-runners#routing-precedence-for-self-hosted-runners).
 
 Shared mode defaults to CPU usage at or below 50% and at least 4 GiB available
 memory. The optional available-memory metric includes reclaimable cache; missing
@@ -103,6 +105,26 @@ transient bootstrap failure; do not stop unrelated processes.
 On a Mac, build `sh apps/menubar/build.sh` and open the generated Actions Fleet
 app. It reads the host's nonsecret status and offers local pause/resume. The host
 service is separate and continues running when the menu app quits.
+
+## Runner maintenance
+
+The live template is pinned to `actions/runner` v2.337.0, the latest release
+checked on 2026-09-19. Independent runner updates are disabled so they cannot
+replace Fleet's masking exporter and mandatory admission gate. Template upgrades
+are currently an operator task; this deployment does not automatically rebuild
+or distribute a newly patched runner.
+
+Check upstream releases regularly. GitHub requires runners with automatic updates
+disabled to adopt a new release within 30 days, and can require a critical security
+update sooner. Outdated runners can stop receiving jobs. See [GitHub's runner
+update policy](https://docs.github.com/en/actions/reference/runners/self-hosted-runners#runner-software-updates-on-self-hosted-runners).
+
+Review the new source and update `patches/runner/version.json`; build in a clean
+source cache on each target OS/architecture. Run the focused runner tests and the
+real capture/masking/replay, cancellation, and denied-admission pilots before
+promoting the template. Pause and drain each host, replace its installed template,
+then resume it. Keep the admission and exporter checks enabled throughout the
+upgrade. The [runner patch guide](../patches/runner/README.md) describes the tests.
 
 ## Verification before migration
 

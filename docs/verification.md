@@ -36,10 +36,30 @@ in a 0600 configuration file within a 0700 state directory.
   The first Mac simultaneously ran Test Server 1 from the same workflow,
   demonstrating compatible job assignment across two physical machines.
 
+- [Pathway CI](https://github.com/SpiritDevs/pathway/actions/runs/35405815094)
+  passed all six enabled jobs on commit `ae845ea32`: Check, general Test, all
+  three server shards, and Release Smoke. The server shards recorded 3,988
+  passing tests and 11 skipped tests. The Linux Rust lane was skipped as
+  configured for the Mac-only rollout.
+
+- [Pathway nightly](https://github.com/SpiritDevs/pathway/actions/runs/35404594588)
+  attempt 2 built signed ARM64 artifacts on the Dedicated Mac. Production Convex
+  deployment and Apple notarization succeeded; the shipped ZIP passed the
+  Developer ID, team, ARM64, and stapled-ticket checks before upload. The public
+  [nightly prerelease](https://github.com/SpiritDevs/pathway/releases/tag/v0.0.42-nightly.20260918.153)
+  contains the DMG, ZIP, blockmaps, and nightly updater manifest. The independently
+  downloaded public ZIP matched GitHub's SHA-256 digest and the updater
+  manifest's size/SHA-512. Its extracted app passed deep/strict codesign, expected
+  team, ARM64, version, and stapler validation without being launched. This
+  release was built from `c6bc4cf23`; native Apple UI lanes and hosted-web
+  deployment are separate checks.
+
 An authenticated browser verified the deployed job history, both Mac cards,
 available-memory display, WebSocket connection, and completed console output
 without page errors. Both installed agents now report the optional available
-memory field. Normal GitHub browser login was also exercised.
+memory field. A later authenticated browser check verified both local pauses
+appear as “Paused on this machine” with no page errors; both services were then
+resumed. Normal GitHub browser login was also exercised.
 
 ## Automated checks
 
@@ -86,5 +106,8 @@ Full Xcode and SDK discovery passed on the second Mac; that alone does not prove
 the native iOS/visionOS workflow lanes. The menu app is locally ad-hoc signed;
 there is no notarized downloadable distribution yet.
 
-Pilot checks do not establish that a Pathway signed release or every existing
-Pathway test succeeds. Track those separately in the Pathway migration runbook.
+Pathway CI and the signed nightly have the separate evidence above. A new stable
+desktop version has not been published as part of validation; stable publication
+remains a deliberate tag/manual release, with npm requiring the agreed human
+approval. Track native Apple UI and hosted-web outcomes in the Pathway migration
+runbook.

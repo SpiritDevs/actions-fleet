@@ -39,7 +39,9 @@ bash/sh/python argument templates. `FleetShellArguments` quotes unquoted script
 placeholders before handing the string to .NET's argument parser, preserving
 already-quoted custom templates and PowerShell command templates. This keeps
 the default Mac state directory (`Application Support/Actions Fleet`) usable
-without relocating workspaces. Windows argument handling remains upstream's.
+when script paths contain spaces. The agent separately uses a private,
+space-free checkout and command-file directory for third-party actions that
+assume unquoted paths. Windows argument handling remains upstream's.
 The runner marker records `shellPathProtocol: 1`. The focused
 `FleetShellArgumentsL0` tests execute real Bash and sh through .NET with spaces,
 double quotes, and apostrophes in the script path; the live pilot additionally
