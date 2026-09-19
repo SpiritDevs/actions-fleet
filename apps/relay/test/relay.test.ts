@@ -99,6 +99,7 @@ afterAll(async () => { await mf?.dispose(); });
 describe("durable relay endpoints with GitHub boundary simulated", () => {
   it("requires owner OAuth, one-use state, a real session and exact mutation Origin", async () => {
     expect((await api("/api/overview")).status).toBe(401);
+    expect((await api("/api/jobs/31/failure-context")).status).toBe(401);
     expect((await signIn(99)).response.status).toBe(403);
     const login = await signIn();
     expect(login.response.status).toBe(302);
@@ -154,6 +155,13 @@ describe("durable relay endpoints with GitHub boundary simulated", () => {
     const overview = await (await api("/api/overview")).json() as Overview;
     expect(overview.jobs.map(job => job.id)).toEqual(["31"]);
   });
+  it("requires a stored job and an operator session for failure context, including empty history", async () => {
+    expect((await api("/api/jobs/31/failure-context", undefined, { Cookie: "", Authorization: `Bearer ${hostToken}` })).status).toBe(401);
+    expect((await api("/api/jobs/unknown/failure-context")).status).toBe(404);
+    const response = await api("/api/jobs/31/failure-context");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ lines: [], notes: ["No retained console records are available for this job. This does not establish whether the job emitted output."] });
+  });
   it("atomically reserves one job per host across concurrent claim requests", async () => {
     expect((await api(`/api/hosts/${hostId}/mode`, { mode: "dedicated" })).status).toBe(200);
     const results = await Promise.all([host("/agent/claim"), host("/agent/claim")]);
@@ -187,6 +195,9 @@ describe("durable relay endpoints with GitHub boundary simulated", () => {
     const page = await (await api("/api/jobs/31/logs?after=0")).json() as { lines: LogLine[]; nextCursor: number; truncated: boolean };
     expect(page.lines.map(item => item.jobId)).toEqual(["31", "31"]);
     expect(page.nextCursor).toBe(2); expect(page.truncated).toBe(false);
+    const excerpt = await (await api("/api/jobs/31/failure-context")).json() as { lines: LogLine[]; notes: string[] };
+    expect(excerpt.lines).toEqual(page.lines);
+    expect(excerpt.notes.join(" ")).toContain("No strong error markers");
     const overview = await (await api("/api/overview")).json() as Overview;
     expect(overview.jobs[0]!.conclusion).toBeNull();
     expect(overview.jobs[0]!.status).toBe("in_progress");
@@ -253,6 +264,9 @@ describe("durable relay endpoints with GitHub boundary simulated", () => {
     expect(await (await host("/agent/logs", { leaseId: firstLease.id, lines: [line] })).json()).toEqual({ acknowledgedSequence: 1 });
     const logs = await (await api("/api/jobs/33/logs")).json() as { lines: LogLine[] };
     expect(logs.lines[0]!.jobId).toBe("33");
+    const excerpt = await (await api("/api/jobs/33/failure-context")).json() as { lines: LogLine[] };
+    expect(excerpt.lines).toEqual(logs.lines);
+    expect(excerpt.lines.every(line => line.jobId === "33")).toBe(true);
   });
   it("evicts the fleet's oldest records across jobs while preserving each lease acknowledgment", async () => {
     expect(await (await host("/agent/logs", { leaseId: lease.id, lines: [{ ...firstLogLine, sequence: 8, line: "a".repeat(1200) }] })).json()).toEqual({ acknowledgedSequence: 8 });

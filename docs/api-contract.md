@@ -10,6 +10,7 @@ Operator endpoints:
 - `GET /api/jobs?limit=100&cursor=...` and `GET /api/audit?limit=100&cursor=...` -> `{items, nextCursor}`; opaque pagination cursors, maximum 500 items per page.
 - `GET /api/jobs/:id` -> `Job`, including retained jobs outside the overview window.
 - `GET /api/jobs/:id/logs?after=0` -> `{lines: LogLine[], nextCursor: number, truncated: boolean, hasMore: boolean}`. Cursor is per GitHub job identity.
+- `GET /api/jobs/:id/failure-context` -> `FailureContext` (`{lines: LogLine[], notes: string[]}`). Authenticated, read-only diagnostic excerpts selected from retained masked logs, including early error context and the job tail. Notes describe selection, retention gaps, and size limits; this is not a full-log export. Used locally by the dashboard to prepare a copyable AI troubleshooting prompt, without calling an AI service.
 - `POST /api/hosts/enrollment` `{name}` -> `{token, expiresAt, relayUrl}` (one-use token).
 - `POST /api/hosts/:id/mode` `{mode}` -> `{ok: true}`; `DELETE /api/hosts/:id` revokes the host.
 - `GET /api/connections/install` -> `{url}`; `POST /api/connections/sync` synchronizes installations/repositories the App can access.

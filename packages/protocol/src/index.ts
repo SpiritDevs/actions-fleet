@@ -38,6 +38,7 @@ export const logLineSchema = z.object({
   line: z.string().max(65536),
 });
 export type LogLine = z.infer<typeof logLineSchema>;
+export interface FailureContext { lines: LogLine[]; notes: string[] }
 export interface AuditEvent { id: string; actor: string; action: string; target: string; createdAt: string; detail: string }
 export interface Viewer { id: number; login: string; avatarUrl: string }
 export interface Overview {

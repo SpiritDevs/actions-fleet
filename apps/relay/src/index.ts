@@ -5,6 +5,7 @@ import type { AuditEvent, Connection, FleetEvent, Host, Job, Lease, LogLine, Rep
 import { cookie, cookies, hash, randomToken, verifySignature } from "./crypto.ts";
 import { compatible, GitHub } from "./github.ts";
 import { preservePatchedRunner } from "./jit.ts";
+import { failureContext } from "./failure-context.ts";
 import type { GitHubRun } from "./github.ts";
 import { after, body, configured, HttpError, id, json, nowIso } from "./types.ts";
 import type { Env } from "./types.ts";
@@ -303,6 +304,11 @@ export class FleetDO extends DurableObject<Env> {
       this.exec("UPDATE repositories SET data=?, enabled=?, policy_checked_at=? WHERE id=?", JSON.stringify(repo), Number(input.enabled), input.enabled ? nowIso() : null, repo.id);
       this.audit(viewer.login, input.enabled ? "repository.enabled" : "repository.disabled", repo.fullName);
       this.broadcast({ type: "refresh" }); return json({ ok: true });
+    }
+    const failureMatch = path.match(/^\/api\/jobs\/([^/]+)\/failure-context$/);
+    if (failureMatch && request.method === "GET") {
+      const jobId = decodeURIComponent(failureMatch[1]!); this.getJob(jobId);
+      return json(failureContext(<T>(query: string, ...values: (string | number)[]) => this.rows<T>(query, ...values), jobId));
     }
     const logsMatch = path.match(/^\/api\/jobs\/([^/]+)\/logs$/);
     if (logsMatch && request.method === "GET") {

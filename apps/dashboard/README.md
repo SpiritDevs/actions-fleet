@@ -12,4 +12,6 @@ Live connections use one-use tickets from `/api/live-ticket`, then connect direc
 
 Controls show their GitHub scope before execution. Cancellation affects the entire workflow run, and job reruns include dependent jobs. An accepted request is not presented as a completed state change. Shared mode is described as best effort; displayed metrics refer to the whole machine.
 
-Validation: `npm run build --workspace @actions-fleet/dashboard`, `npm run typecheck --workspace @actions-fleet/dashboard`, and `npx vitest run apps/dashboard/src/model.test.ts`. No production deployment or authenticated browser session is required to compile.
+Failed jobs offer **Copy AI fix prompt**. The button retrieves failure-focused retained context beyond the visible console window and locally formats job details, failed steps, links, current machine inventory, and quoted log evidence into a prompt capped at 32 KiB. Coverage notes identify omitted or missing logs. If retrieval fails, the prompt explicitly falls back to the loaded console; if clipboard access is denied, a selectable text area provides the prompt. No AI API is called.
+
+Validation: `npm run build --workspace @actions-fleet/dashboard`, `npm run typecheck --workspace @actions-fleet/dashboard`, and `npx vitest run apps/dashboard/src/model.test.ts apps/dashboard/src/fixPrompt.test.ts apps/dashboard/src/fixPromptClipboard.test.ts`. No production deployment or authenticated browser session is required to compile.

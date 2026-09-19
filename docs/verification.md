@@ -51,8 +51,9 @@ in a 0600 configuration file within a 0700 state directory.
   downloaded public ZIP matched GitHub's SHA-256 digest and the updater
   manifest's size/SHA-512. Its extracted app passed deep/strict codesign, expected
   team, ARM64, version, and stapler validation without being launched. This
-  release was built from `c6bc4cf23`; native Apple UI lanes and hosted-web
-  deployment are separate checks.
+  release was built from `c6bc4cf23`. Its hosted-web job also completed
+  successfully, deploying the nightly app to Vercel; the beta app returned
+  HTTP 200. Native Apple UI lanes are separate checks.
 
 An authenticated browser verified the deployed job history, both Mac cards,
 available-memory display, WebSocket connection, and completed console output
@@ -61,9 +62,20 @@ memory field. A later authenticated browser check verified both local pauses
 appear as “Paused on this machine” with no page errors; both services were then
 resumed. Normal GitHub browser login was also exercised.
 
+Job history displays an animated blue spinner while running, green success,
+red failure, and gray queued indicators, with reduced-motion support. An
+authenticated browser verified the actual colors and animation.
+
+Failed-job sheets offer **Copy AI fix prompt**. On a real failed visionOS job,
+the deployed dashboard copied the exact revision, failed-step metadata, links,
+current machine inventory, and causal toolchain error from 72 retained excerpt
+records into a 16,603-byte prompt. Console search filters did not remove that
+evidence. Clipboard-denial and unavailable-history fallbacks also passed,
+successful jobs hid the control, and no browser runtime errors occurred.
+
 ## Automated checks
 
-The fleet's 94 tests passed across 11 files.
+The fleet's 117 tests passed across 14 files.
 Workspace typechecks and builds passed. The pinned
 runner's 25 focused C# tests passed, including actual Bash/sh invocation with
 spaces and quote characters in paths. Native Swift menu model checks and its
@@ -109,5 +121,5 @@ there is no notarized downloadable distribution yet.
 Pathway CI and the signed nightly have the separate evidence above. A new stable
 desktop version has not been published as part of validation; stable publication
 remains a deliberate tag/manual release, with npm requiring the agreed human
-approval. Track native Apple UI and hosted-web outcomes in the Pathway migration
+approval. Track native Apple UI outcomes in the Pathway migration
 runbook.
