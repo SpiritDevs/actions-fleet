@@ -40,7 +40,22 @@ in a 0600 configuration file within a 0700 state directory.
   passed all six enabled jobs on commit `ae845ea32`: Check, general Test, all
   three server shards, and Release Smoke. The server shards recorded 3,988
   passing tests and 11 skipped tests. The Linux Rust lane was skipped as
-  configured for the Mac-only rollout.
+  configured for the Mac-only rollout. The final migration head `8847b6572`
+  also passed all six enabled jobs in
+  [run 35409614904](https://github.com/SpiritDevs/pathway/actions/runs/35409614904).
+
+- [Native dictation](https://github.com/SpiritDevs/pathway/actions/runs/35401583572)
+  passed on the Command Line Tools Mac, including native Metal compilation,
+  model/cancellation checks, and artifact upload.
+
+- [Native iPhone](https://github.com/SpiritDevs/pathway/actions/runs/35408527166/job/105803215247)
+  passed on the Xcode Mac at `7ee16bc9c`: the result bundle recorded 458 passing
+  tests, zero failures, and zero skips. Both corrected Conversation fixtures
+  passed. The operator subsequently cancelled the workflow; iPad had not
+  started. The earlier visionOS job failed because its simulator runtime was
+  absent. The ARM64 visionOS 26.2 runtime is now installed and available, and
+  `8847b6572` adds the runtime prerequisite check, but the build retry remains
+  unverified. The cancelled workflow was not restarted.
 
 - [Pathway nightly](https://github.com/SpiritDevs/pathway/actions/runs/35404594588)
   attempt 2 built signed ARM64 artifacts on the Dedicated Mac. Production Convex
@@ -54,6 +69,13 @@ in a 0600 configuration file within a 0700 state directory.
   release was built from `c6bc4cf23`. Its hosted-web job also completed
   successfully, deploying the nightly app to Vercel; the beta app returned
   HTTP 200. Native Apple UI lanes are separate checks.
+
+The owner approved the staged `@spiritdevs/pathway@0.0.42` npm package with 2FA.
+The public `latest` version and archive integrity matched the reviewed Apple
+Silicon package. An isolated Node 24 installation, native install scripts,
+`pathway --version`, and `pathway --help` passed without starting the app against
+the owner's data. Subsequent stable CLI releases retain the manual npm approval
+step.
 
 An authenticated browser verified the deployed job history, both Mac cards,
 available-memory display, WebSocket connection, and completed console output
@@ -114,8 +136,8 @@ GitHub artifacts/caches, and electricity remain separate costs.
 Two physical ARM64 Macs have been exercised concurrently. Native Linux support,
 including its memory parser and service definition, is implemented, but no real
 Linux host has been enrolled or validated. Intel Mac execution is also unverified.
-Full Xcode and SDK discovery passed on the second Mac; that alone does not prove
-the native iOS/visionOS workflow lanes. The menu app is locally ad-hoc signed;
+The iPhone lane passed; iPad and the corrected visionOS build remain unverified
+after the operator cancelled their validation run. The menu app is locally ad-hoc signed;
 there is no notarized downloadable distribution yet.
 
 Pathway CI and the signed nightly have the separate evidence above. A new stable
